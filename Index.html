@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Veritas AI — Trust, Privacy, and Accountability Survey</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root { --maxw: 980px; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; line-height: 1.45; margin: 0; }
+    header, main, footer { max-width: var(--maxw); margin: 0 auto; padding: 1rem; }
+    header { background: #f5f8fa; border-bottom: 1px solid #e5e5e5; }
+    h1, h2 { margin: .6rem 0; }
+    .plots { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+    @media (min-width: 900px) { .plots { grid-template-columns: 1fr 1fr; } }
+    .card { border: 1px solid #e8e8e8; border-radius: 8px; padding: 1rem; }
+    .sliders { display: grid; gap: .5rem; margin-top: .5rem; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: .75rem; align-items: center; }
+    .success, .error { padding: .75rem 1rem; border-radius: 6px; margin-top: .5rem; display: none; }
+    .success { background: #e9f9ee; border: 1px solid #bde5c8; }
+    .error { background: #fde8e8; border: 1px solid #f5b5b5; }
+    .muted { color: #666; font-size: .9rem; }
+    button { padding: .7rem 1.1rem; border-radius: 8px; border: 1px solid #0000; cursor: pointer; }
+    .primary { background: black; color: white; }
+    .secondary { background: #f3f3f3; }
+    footer { color: #666; font-size: .9rem; text-align: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Veritas AI — Public Trust in Policing</h1>
+    <p class="muted">Veritas AI uses advanced pattern recognition to flag potential police misconduct, promoting accountability and rebuilding trust between communities and law enforcement. This short survey explores how society balances <strong>Accountability</strong>, <strong>Privacy</strong>, and <strong>Trust</strong> — both today and in 2075.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Step 1 — Define your ethical balance</h2>
+      <p class="muted">Use the sliders or drag the point on each triangle to represent how you think society prioritises these three values now versus in 2075.</p>
+    </section>
+
+    <section class="plots">
+      <div class="card">
+        <h2>Now</h2>
+        <div id="plotNow" style="width:100%;height:420px"></div>
+        <div class="sliders">
+          <div class="row"><label>Accountability</label><input type="range" id="nowA" min="0" max="100" step="1" value="33"><span id="nowA_out">33%</span></div>
+          <div class="row"><label>Privacy</label><input type="range" id="nowB" min="0" max="100" step="1" value="33"><span id="nowB_out">33%</span></div>
+          <div class="row"><label>Trust</label><input type="range" id="nowC" min="0" max="100" step="1" value="34"><span id="nowC_out">34%</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2075</h2>
+        <div id="plotFuture" style="width:100%;height:420px"></div>
+        <div class="sliders">
+          <div class="row"><label>Accountability</label><input type="range" id="futA" min="0" max="100" step="1" value="33"><span id="futA_out">33%</span></div>
+          <div class="row"><label>Privacy</label><input type="range" id="futB" min="0" max="100" step="1" value="33"><span id="futB_out">33%</span></div>
+          <div class="row"><label>Trust</label><input type="range" id="futC" min="0" max="100" step="1" value="34"><span id="futC_out">34%</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Step 2 — Submit your response</h2>
+     <form id="valuesForm" method="POST" action="https://formspree.io/f/xdkpkgay">
+        <input type="hidden" name="now" id="nowField" />
+        <input type="hidden" name="future" id="futureField" />
+        <div class="row"><label>Email (optional):</label><input name="email" type="email" placeholder="you@example.com" /></div>
+        <button type="submit" class="primary">Submit</button>
+        <button type="button" id="resetBtn" class="secondary">Reset</button>
+        <div id="ok" class="success">Thanks — your response was recorded!</div>
+        <div id="err" class="error">Something went wrong. Please try again.</div>
+      </form>
+      <p class="muted"><strong>Note:</strong> Replace <code>YOUR_FORM_ID</code> in the form action with your actual Formspree ID before publishing.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Part of the <em>Digital Society 2025 – 26</em> project.<br>“Assistance received from Digital Society Assistant (GPT‑5), OpenAI.”</p>
+  </footer>
+
+  <script>
+    function norm(a,b,c){const s=a+b+c;if(s===0)return[33,33,34];return[a/s*100,b/s*100,c/s*100];}
+    function roundT(t){let[A,B,C]=t.map(x=>Math.round(x));const d=100-(A+B+C);A+=d;return[A,B,C];}
+    function upd(which,A,B,C){const n=roundT(norm(A,B,C));n.forEach((v,i)=>{
+      const id=which+['A','B','C'][i];document.getElementById(id).value=v;document.getElementById(id+'_out').textContent=v+'%';
+    });draw(which);}
+    function read(which){return['A','B','C'].map(x=>Number(document.getElementById(which+x).value));}
+    function draw(which){const [A,B,C]=read(which);const d=[{type:'scatterternary',mode:'markers',a:[A],b:[B],c:[C],marker:{size:12}}];
+      Plotly.react(which==='now'?'plotNow':'plotFuture',d,{ternary:{aaxis:{title:'Accountability'},baxis:{title:'Privacy'},caxis:{title:'Trust'}},margin:{l:10,r:10,b:10,t:10},showlegend:false},{displaylogo:false});}
+    ['now','fut'].forEach(w=>{['A','B','C'].forEach(k=>document.getElementById(w+k).addEventListener('input',()=>{const t=read(w);upd(w,t[0],t[1],t[2]);}));});
+    upd('now',33,33,34);upd('fut',33,33,34);
+    const form=document.getElementById('valuesForm');
+    form.addEventListener('submit',async e=>{e.preventDefault();const now=read('now'),fut=read('fut');
+      document.getElementById('nowField').value=JSON.stringify(now);document.getElementById('futureField').value=JSON.stringify(fut);
+      try{const res=await fetch(form.action,{method:'POST',headers:{'Accept':'application/json'},body:new FormData(form)});
+      if(res.ok){document.getElementById('ok').style.display='block';document.getElementById('err').style.display='none';}
+      else document.getElementById('err').style.display='block';}catch{document.getElementById('err').style.display='block';}});
+    document.getElementById('resetBtn').addEventListener('click',()=>{upd('now',33,33,34);upd('fut',33,33,34);document.getElementById('ok').style.display='none';document.getElementById('err').style.display='none';});
+  </script>
+</body>
+</html>
